@@ -1,69 +1,89 @@
+import { promises as fs } from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
-import { readFile, updateFile } from "../helpers/utils.js";
+const contactsPath = path.resolve("db", "contacts.json");
+console.log(contactsPath);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const contactsPath = path.join(__dirname, "../db", "contacts.json");
-
-const listContacts = async () => {
-  const data = await readFile(contactsPath);
-  const contacts = JSON.parse(data);
-
-  return contacts;
+const listContacts = async (req, res) => {
+  const path = await fs.readFile(contactsPath);
+  return JSON.parse(path);
 };
 
-const getContactById = async (contactId) => {
-  const contacts = await listContacts();
-  const contact = contacts.find(({ id }) => id === contactId);
+async function getContactById(contactId) {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
+    const contact =
+      contacts.find((contact) => contact.id === contactId) || null;
+    return contact || null;
+  } catch (error) {
+    return null;
+  }
+}
 
-  return contact ? contact : null;
-};
+async function removeContact(contactId) {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
+    const removedContact = contacts.find((contact) => contact.id === contactId);
+    if (!removedContact) return null;
 
-const removeContact = async (contactId) => {
-  const contacts = await listContacts();
-  const contact = contacts.find(({ id }) => id === contactId);
+    const updatedContacts = contacts.filter(
+      (contact) => contact.id !== contactId
+    );
+    await fs.writeFile(contactsPath, JSON.stringify(updatedContacts, null, 2));
+    return removedContact;
+  } catch (error) {
+    return null;
+  }
+}
 
-  if (!contact) return null;
+async function addContact(name, email, phone) {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
+    const newContact = { id: Date.now().toString(), name, email, phone };
+    contacts.push(newContact);
 
-  const newContacts = contacts.filter(({ id }) => id !== contactId);
+    await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+    return newContact;
+  } catch (error) {
+    return null;
+  }
+}
 
-  await updateFile(contactsPath, newContacts);
+async function updateContactService(id, name, email, phone) {
+  try {
+    const data = await fs.readFile(contactsPath, "utf-8");
+    const contacts = JSON.parse(data);
 
-  return contact;
-};
+    const existingContactIndex = contacts.findIndex(
+      (contact) => contact.id === id
+    );
 
-const addContact = async (name, email, phone) => {
-  const contacts = await listContacts();
-  const newContact = { id: crypto.randomUUID(), name, email, phone };
-  const newContacts = [...contacts, newContact];
+    if (existingContactIndex === -1) {
+      return null;
+    }
 
-  await updateFile(contactsPath, newContacts);
+    contacts[existingContactIndex].name =
+      name || contacts[existingContactIndex].name;
+    contacts[existingContactIndex].email =
+      email || contacts[existingContactIndex].email;
+    contacts[existingContactIndex].phone =
+      phone || contacts[existingContactIndex].phone;
 
-  return newContact;
-};
+    await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
 
-const updateContactServices = async (contactId, body) => {
-  const contacts = await listContacts();
-  const contact = contacts.find(({ id }) => id === contactId);
-
-  if (!contact) return null;
-
-  const newContacts = contacts.map((contact) =>
-    contact.id === contactId ? { ...contact, ...body } : contact
-  );
-
-  await updateFile(contactsPath, newContacts);
-
-  return newContacts.find(({ id }) => id === contactId);
-};
+    return contacts[existingContactIndex];
+  } catch (error) {
+    return null;
+  }
+}
 
 export {
   listContacts,
   getContactById,
   removeContact,
   addContact,
-  updateContactServices,
+  updateContactService,
 };

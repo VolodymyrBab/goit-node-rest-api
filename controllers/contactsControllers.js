@@ -1,125 +1,78 @@
-import  {
+import { HttpError } from "../helpers/HttpError.js";
+import {
   listContacts,
   getContactById,
   removeContact,
   addContact,
-  updateContactServices,
-}  from "../services/contactsServices.js";
-import HttpError from "../helpers/HttpError.js";
+  updateContactService,
+} from "../services/contactsServices.js";
+
 import {
   createContactSchema,
   updateContactSchema,
 } from "../schemas/contactsSchemas.js";
 
-export const getAllContacts = async (_, res) => {
+export const listContactsAll = async (req, res, next) => {
   try {
     const contacts = await listContacts();
-
-    res.json({
-      data: {
-        contacts,
-      },
-    });
+    res.status(200).json(contacts);
   } catch (error) {
-    console.error(error);
-    res.send(HttpError(404));
+    next(error);
   }
 };
 
 export const getOneContact = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const contact = await getContactById(id);
-
-    console.log(contact);
-
-    if (!contact) {
-      return res.status(404).send({ message: "Not found" });
-    }
-
-    res.json({
-      data: {
-        contact,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.send(HttpError(409));
+  const { id } = req.params;
+  const contact = await getContactById(id);
+  if (contact) {
+    res.status(200).json(contact);
+  } else {
+    res.status(404).json({ message: "Not found" });
   }
 };
 
 export const deleteContact = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const contact = await removeContact(id);
-
-    if (!contact) {
-      return res.status(404).send({ message: "Not found" });
-    }
-
-    res.json({
-      data: {
-        contact,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.send(HttpError(409));
+  const { id } = req.params;
+  const deletedContact = await removeContact(id);
+  if (deletedContact) {
+    res.status(200).json(deletedContact);
+  } else {
+    res.status(404).json({ message: "Not found" });
   }
 };
 
 export const createContact = async (req, res) => {
-  try {
-    const { name, email, phone } = req.body;
-    const { error } = createContactSchema.validate(req.body);
+  const { name, email, phone } = req.body;
 
-    if (error) {
-      return res.status(400).send({ message: error.message });
-    }
-
-    const contact = await addContact(name, email, phone);
-
-    res.status(201).json({
-      data: {
-        contact,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.send(HttpError(409));
+  const { error } = createContactSchema.validate({ name, email, phone });
+  if (error) {
+    return res.status(400).json({ message: error.message });
   }
+
+  const newContact = await addContact(name, email, phone);
+  res.status(201).json(newContact);
 };
 
 export const updateContact = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const isBodyEmpty = Object.keys(req.body).length === 0;
+  const { id } = req.params;
+  const { name, email, phone } = req.body;
 
-    if (isBodyEmpty) {
-      return res
-        .status(400)
-        .send({ message: "Body must have at least one field" });
-    }
+  if (!name && !email && !phone && Object.keys(req.body).length === 0) {
+    return res
+      .status(400)
+      .json({ message: "Body must have at least one field" });
+  }
 
-    const { error } = updateContactSchema.validate(req.body);
+  const { error } = updateContactSchema.validate({ name, email, phone });
+  if (error) {
+    return res.status(400).json({ message: error.message });
+  }
 
-    if (error) {
-      return res.status(400).send({ message: error.message });
-    }
+  const updatedContact = await updateContactService(id, name, email, phone);
 
-    const contact = await updateContactServices(id, req.body);
-
-    if (!contact) {
-      return res.status(404).send({ message: "Not found" });
-    }
-
-    res.json({
-      data: {
-        contact,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.send(HttpError(409));
+  if (updatedContact) {
+    res.status(200).json(updatedContact);
+  } else {
+    res.status(404).json({ message: "Not found" });
   }
 };
