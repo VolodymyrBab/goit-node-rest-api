@@ -1,69 +1,80 @@
-import path from "path";
-import { fileURLToPath } from "url";
-
-import { readFile, updateFile } from "../helpers/utils.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const contactsPath = path.join(__dirname, "../db", "contacts.json");
+import { Contact } from "../models/contModel.js";
 
 const listContacts = async () => {
-  const data = await readFile(contactsPath);
-  const contacts = JSON.parse(data);
-
-  return contacts;
+  try {
+    const contacts = await Contact.find();
+    return contacts;
+  } catch (error) {
+    console.log(`Error: ${error}`);
+  }
 };
 
-const getContactById = async (contactId) => {
-  const contacts = await listContacts();
-  const contact = contacts.find(({ id }) => id === contactId);
+async function getContactById(id) {
+  try {
+    const contact = await Contact.findById(id);
+    return contact || null;
+  } catch (error) {
+    return null;
+  }
+}
 
-  return contact ? contact : null;
-};
+async function removeContact(id) {
+  try {
+    const removedContact = await Contact.findByIdAndDelete(id);
+    return removedContact || null;
+  } catch (error) {
+    return null;
+  }
+}
 
-const removeContact = async (contactId) => {
-  const contacts = await listContacts();
-  const contact = contacts.find(({ id }) => id === contactId);
+async function addContact(name, email, phone) {
+  try {
+    const newContact = await Contact.create({ name, email, phone });
+    return newContact;
+  } catch (error) {
+    return null;
+  }
+}
 
-  if (!contact) return null;
+async function updateContactService(id, name, email, phone) {
+  try {
+    const existingContact = await Contact.findById(id);
 
-  const newContacts = contacts.filter(({ id }) => id !== contactId);
+    if (!existingContact) {
+      return null;
+    }
 
-  await updateFile(contactsPath, newContacts);
+    existingContact.name = name || existingContact.name;
+    existingContact.email = email || existingContact.email;
+    existingContact.phone = phone || existingContact.phone;
 
-  return contact;
-};
+    await existingContact.save();
 
-const addContact = async (name, email, phone) => {
-  const contacts = await listContacts();
-  const newContact = { id: crypto.randomUUID(), name, email, phone };
-  const newContacts = [...contacts, newContact];
+    return existingContact;
+  } catch (error) {
+    return null;
+  }
+}
 
-  await updateFile(contactsPath, newContacts);
-
-  return newContact;
-};
-
-const updateContactServices = async (contactId, body) => {
-  const contacts = await listContacts();
-  const contact = contacts.find(({ id }) => id === contactId);
-
-  if (!contact) return null;
-
-  const newContacts = contacts.map((contact) =>
-    contact.id === contactId ? { ...contact, ...body } : contact
-  );
-
-  await updateFile(contactsPath, newContacts);
-
-  return newContacts.find(({ id }) => id === contactId);
-};
+async function updateStatusContact(id, favorite) {
+  try {
+    const updatedContact = await Contact.findByIdAndUpdate(
+      id,
+      { favorite },
+      { new: true },
+    );
+    return updatedContact;
+  } catch (error) {
+    console.error(`Error updating contact status: ${error}`);
+    return null;
+  }
+}
 
 export {
   listContacts,
   getContactById,
   removeContact,
   addContact,
-  updateContactServices,
+  updateContactService,
+  updateStatusContact,
 };

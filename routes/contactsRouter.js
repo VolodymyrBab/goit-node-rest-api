@@ -14,7 +14,7 @@ import {
   updateContactSchema,
   patchSchema,
 } from "../schemas/contactsSchemas.js";
-import { isValidId } from "../middlewares/isValidId.js";
+import { isValidId } from "../middlewares/isValidObjectId.js";
 
 const contactsRouter = express.Router();
 
