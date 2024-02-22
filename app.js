@@ -6,13 +6,16 @@ import dotenv from "dotenv";
 import contactsRouter from "./routes/contactsRouter.js";
 import authRouter from "./routes/auth.js";
 
-dotenv.config();
+
+dotenv.config({
+  path: process.env.NODE_ENV === 'production' ? './production.env' :'./development.env'
+});
 
 const app = express();
 
-const tiny = app.get("env") === "development" ? "dev" : "short";
+if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
-app.use(morgan(tiny));
+
 app.use(cors());
 app.use(express.json());
 
