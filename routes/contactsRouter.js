@@ -13,7 +13,7 @@ import {
   updateContactSchema,
   updateFavoriteSchema,
 } from "../schemas/contactsSchemas.js";
-import { isValidId } from "../helpers/isValidId.js";
+import { isValidId } from "../helpers/isValidObjectId.js";
 import { authenticate } from "../helpers/authenticate.js";
 
 const contactsRouter = express.Router();
