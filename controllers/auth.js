@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
-dotenv.config({
-  path: process.env.NODE_ENV === 'production' ? './production.env' :'./development.env'
-});
+
+dotenv.config({path: process.env.NODE_ENV === 'production' ? './production.env' :'./development.env'});
 import { User } from "../models/userModels.js";
 import HttpError from "../helpers/HttpError.js";
 import bcrypt from "bcrypt";
